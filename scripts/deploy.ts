@@ -1,18 +1,18 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+ 
+  const CoTrainingToken = await ethers.getContractFactory("CoTrainingToken");
+  const ctt = await CoTrainingToken.deploy();
 
-  const lockedAmount = ethers.utils.parseEther("1");
+  await ctt.deployed();
 
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  console.log(`CoTraining deployed successfully, address: ${ctt.address}`);
 
-  await lock.deployed();
+  const CoTraing = await ethers.getContractFactory("CoTraining");
+  const ct = await CoTraing.deploy(ctt.address);
 
-  console.log(`Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`);
+  console.log(`CoTraining deployed successfully, address: ${ct.address}`)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

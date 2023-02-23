@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-contract AIToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes {
-    constructor() ERC20("AIToken", "AIT") ERC20Permit("AIToken") {}
+contract CoTrainingToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes {
+    constructor() ERC20("CoTrainingToken", "CTT") ERC20Permit("CoTrainingToken") {}
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
