@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./ICoTraining.sol";
 
 contract CoTraining is ICoTraining {
+    ERC20 private ctt;
+    address private owner;
+
     struct Task {
         uint256 id;
         address owner;
@@ -17,10 +20,18 @@ contract CoTraining is ICoTraining {
     mapping(address => uint) private balancesLocked; // locked tokens
     mapping(address => uint) private balances; // available tokens
 
-    ERC20 private ctt;
-    address private owner;
-
-    event PublishedTask(address, uint, uint);
+    event PublishedTask(
+        address indexed owner,
+        uint256 indexed taskId,
+        uint256 bounty
+    );
+    event Deposit(address indexed from, uint256 amount);
+    event Withdraw(address indexed to, uint256 amount);
+    event Claim(
+        address indexed account,
+        uint256 indexed taskId,
+        uint256 amount
+    );
 
     constructor(ERC20 token) {
         ctt = token;
@@ -37,6 +48,7 @@ contract CoTraining is ICoTraining {
         bool success = ctt.transferFrom(msg.sender, address(this), amount);
         require(success);
         balances[msg.sender] += amount;
+        emit Deposit(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) public {
@@ -47,6 +59,7 @@ contract CoTraining is ICoTraining {
         bool success = ctt.transfer(msg.sender, amount);
         require(success);
         balances[msg.sender] -= amount;
+        emit Withdraw(msg.sender, amount);
     }
 
     function balanceLocked(address account) public view returns (uint256) {
@@ -71,7 +84,7 @@ contract CoTraining is ICoTraining {
         balancesLocked[msg.sender] += bounty;
         idToTask[id] = Task(id, msg.sender, bounty, bytes32(""));
 
-        emit PublishedTask(msg.sender, bounty, id);
+        emit PublishedTask(msg.sender, id, bounty);
     }
 
     /**
@@ -103,5 +116,6 @@ contract CoTraining is ICoTraining {
 
         bool success = ctt.transfer(msg.sender, bounty);
         require(success);
+        emit Claim(msg.sender, id, bounty);
     }
 }

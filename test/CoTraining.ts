@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import "@nomicfoundation/hardhat-chai-matchers";
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
@@ -42,16 +43,29 @@ describe("CoTraining", function () {
   });
 
   it("2. deposit tokens ", async () => {
-    await token.connect(merchant1).approve(coTrainingContract.address, 100);
-    await coTrainingContract.connect(merchant1).deposit(100);
-    expect(await coTrainingContract.balanceOf(merchant1.address)).to.equal(100);
+    const depostAmount = 100;
+    await token
+      .connect(merchant1)
+      .approve(coTrainingContract.address, depostAmount);
+    await expect(coTrainingContract.connect(merchant1).deposit(depostAmount))
+      .to.emit(coTrainingContract, "Deposit")
+      .withArgs(merchant1.address, depostAmount);
+    expect(await coTrainingContract.balanceOf(merchant1.address)).to.equal(
+      depostAmount
+    );
   });
 
   it("3. publish tasks", async () => {
     const bounty = 50;
-    const tx = await coTrainingContract.connect(merchant1).publishTask(taskId, bounty);
-    await tx.wait();
-    expect(await coTrainingContract.balanceLocked(merchant1.address)).to.equal(50);
+    await expect(
+      coTrainingContract.connect(merchant1).publishTask(taskId, bounty)
+    )
+      .to.emit(coTrainingContract, "PublishedTask")
+      .withArgs(merchant1.address, taskId, bounty);
+
+    expect(await coTrainingContract.balanceLocked(merchant1.address)).to.equal(
+      50
+    );
   });
 
   it("4. settlement", async () => {
@@ -62,23 +76,31 @@ describe("CoTraining", function () {
 
     settleTree = StandardMerkleTree.of(bountyOrders, ["address", "uint256"]);
     await coTrainingContract.settle(taskId, settleTree.root);
-    expect(await coTrainingContract.balanceLocked(merchant1.address)).to.equal(0);
+    expect(await coTrainingContract.balanceLocked(merchant1.address)).to.equal(
+      0
+    );
   });
 
   it("5. claim the bounty", async () => {
+    const claimAmount = 10;
     for (const [i, v] of settleTree.entries()) {
       if (v[0] === worker1.address) {
         const proof = settleTree.getProof(i);
-        let tx = await coTrainingContract.connect(worker1).claim(taskId, proof, 10);
-        tx.wait();
-        expect(await token.balanceOf(worker1.address)).to.equal(10);
+        await expect(
+          coTrainingContract.connect(worker1).claim(taskId, proof, claimAmount)
+        )
+          .to.emit(coTrainingContract, "Claim")
+          .withArgs(worker1.address, taskId, claimAmount);
+        expect(await token.balanceOf(worker1.address)).to.equal(claimAmount);
       }
     }
-    
   });
 
   it("6. withdraw money", async () => {
-    await coTrainingContract.connect(merchant1).withdraw(50);
-    expect(await token.balanceOf(merchant1.address)).to.equal(50);
+    const withdrawAmount = 50;
+    await expect(coTrainingContract.connect(merchant1).withdraw(withdrawAmount))
+      .to.emit(coTrainingContract, "Withdraw")
+      .withArgs(merchant1.address, withdrawAmount);
+    expect(await token.balanceOf(merchant1.address)).to.equal(withdrawAmount);
   });
 });
